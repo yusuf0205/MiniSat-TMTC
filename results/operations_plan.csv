@@ -1,0 +1,17 @@
+t_s,note
+5,Link check and first readings
+20,Wheel step test recorded at 20 Hz by SSTM
+23,Wheel to +3000 rpm
+26,A second SSTM while the first is still running must fail
+29,Wheel to -2000 rpm
+45,Robustness: commands that must be refused
+60,Orbit data upload
+75,Payload on (heavy load) + time-tagged plan for out-of-contact
+120,Dump stored telemetry
+5810,Pass 2: dump everything recorded since the last pass
+11310,Pass 3: dump everything recorded since the last pass
+11370.0,Pass 3: satellite found in SAFE mode (6616 mV)
+16910,Pass 4: dump everything recorded since the last pass
+16970.0,Pass 4: satellite found in SAFE mode (6787 mV)
+22310,Pass 5: dump everything recorded since the last pass
+22370.0,Pass 5: satellite found in SAFE mode (6935 mV)

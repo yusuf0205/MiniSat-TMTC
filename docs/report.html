@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<style>
+@page { size: A4; margin: 17mm 16mm; @bottom-center { content: "MiniSat TM/TC · Project report · " counter(page); font-size: 8pt; color: #888; font-family: "DejaVu Sans"; } }
+@page:first { @bottom-center { content: none; } }
+body { font-family: "DejaVu Sans", sans-serif; font-size: 10pt; line-height: 1.5; color: #1d2433; }
+h1 { font-size: 18pt; color: #0b3d91; border-bottom: 3px solid #0b3d91; padding-bottom: 4px; page-break-before: always; margin-top: 0; }
+h2 { font-size: 12.5pt; color: #0b3d91; margin: 16px 0 4px 0; }
+p { margin: 5px 0 7px 0; }
+code, .mono { font-family: "DejaVu Sans Mono", monospace; font-size: 8.8pt; background: #f1f3f7; padding: 0 2px; }
+pre { font-family: "DejaVu Sans Mono", monospace; font-size: 8pt; background: #f4f6fa; border: 1px solid #d9dee8; border-radius: 4px; padding: 7px 9px; white-space: pre-wrap; line-height: 1.35; page-break-inside: avoid; }
+table { border-collapse: collapse; width: 100%; margin: 6px 0 10px 0; font-size: 8.8pt; }
+tr { page-break-inside: avoid; }
+th { background: #0b3d91; color: #fff; text-align: left; padding: 4px 6px; }
+td { border: 1px solid #d3d8e2; padding: 3px 6px; vertical-align: top; }
+tr:nth-child(even) td { background: #f7f9fc; }
+.box { border-radius: 5px; padding: 7px 11px; margin: 9px 0; page-break-inside: avoid; }
+.simple { background: #e9f5ec; border-left: 5px solid #2e8b57; }
+.analogy { background: #fff6e5; border-left: 5px solid #e39b17; }
+.key { background: #e8f0fe; border-left: 5px solid #0b3d91; }
+.box b.t { display: block; margin-bottom: 2px; }
+img { width: 100%; margin: 6px 0; page-break-inside: avoid; }
+.cap { font-size: 8.5pt; color: #555; margin-top: -4px; }
+.cover { text-align: center; padding-top: 110px; }
+.cover h1 { page-break-before: avoid; border: none; font-size: 27pt; }
+.cover .sub { font-size: 13pt; color: #444; }
+.cover .meta { margin-top: 50px; font-size: 10.5pt; }
+.stat { display: inline-block; width: 30%; margin: 6px 1%; padding: 10px 6px; background: #f1f5fc; border-radius: 6px; text-align: center; vertical-align: top; }
+.stat b { display: block; font-size: 17pt; color: #0b3d91; }
+.stat span { font-size: 8.5pt; color: #333; }
+ul, ol { margin: 4px 0 8px 0; padding-left: 20px; } li { margin-bottom: 2px; }
+</style></head><body>
+
+<div class="cover">
+<h1>MiniSat TM/TC</h1>
+<div class="sub">Building a CubeSat's command &amp; telemetry system from scratch:<br>flight software in C, a ground station in Python, and a simulated radio link</div>
+<div class="meta">Mohammed Yusuf<br>B.Tech Electronics &amp; Communication Engineering, NIT Puducherry<br><br>Personal project, October 2026</div>
+<div style="margin-top:50px">
+<div class="stat"><b>2,170</b><span>lines of C and Python</span></div>
+<div class="stat"><b>34 / 34</b><span>tests passing</span></div>
+<div class="stat"><b>6.4 h</b><span>simulated mission day, 5 ground passes</span></div>
+<div class="stat"><b>35</b><span>commands, every one verified</span></div>
+<div class="stat"><b>97%</b><span>commands delivered at 1 bit error in 1000</span></div>
+<div class="stat"><b>0</b><span>missed 1–3-bit errors in 150,000 trials</span></div>
+</div>
+<p style="margin-top:60px;font-size:8.5pt;color:#666">Inspired by my internship on a CubeSat On-Board Computer team. Contains no company or mission data: every number and format here is my own, built on public standards.</p>
+</div>
+
+<h1>1. What I built, in plain words</h1>
+<p>A satellite can't be touched after launch. The only way to control it is to send it <b>commands</b> (telecommands, TC) over radio, and the only way to know how it's doing is to read the <b>telemetry</b> (TM) it sends back. This project builds both ends of that conversation and the radio link in between:</p>
+<table>
+<tr><th>Part</th><th>Language</th><th>What it does</th></tr>
+<tr><td><b>Flight software</b> (the satellite's brain)</td><td>C99</td><td>Receives radio bits, finds frames, checks them, runs or schedules commands, reports back, looks after the battery, records data while nobody is listening.</td></tr>
+<tr><td><b>Ground station</b></td><td>Python</td><td>Builds and sends commands, retries when replies go missing, decodes every kind of telemetry into tables.</td></tr>
+<tr><td><b>Link + mission simulator</b></td><td>Python</td><td>Decides when the satellite is overhead (ground passes), limits speed to 9600 bit/s, and flips random bits to imitate a noisy radio.</td></tr>
+</table>
+<div class="box analogy"><b class="t">Think of it like…</b>A hotel reception desk (the satellite's computer) that only gets phone calls for 10 minutes every 90 minutes. It has to check every request is genuine, pass it to the right department, confirm twice ("got it", "done"), keep a diary of everything that happens while the phone is silent, and read that diary out at the next call.</div>
+<h2>Why I built it</h2>
+<p>During my internship I documented this kind of system: packet formats, command flowcharts and verification. I wanted to prove I understood it well enough to build the whole thing myself, end to end, and to measure how well it works rather than just describe it.</p>
+
+<h1>2. The big picture</h1>
+<pre style="white-space:pre;font-size:6.9pt">
+ GROUND STATION (Python)                 RADIO LINK MODEL                 ON-BOARD COMPUTER (C)
+ operator plan ─► CCSDS command ─► HDLC ─► pass on/off      ─► bit-level ─► CCSDS parse + CRC
+                  (+ time tag)     frame   9600 bit/s           deframer     7 safety gates
+                                   + CRC   random bit flips                  ├─ "got it" ACK
+ tables + plots ◄─ decode ◄─ deframe ◄───  (bit error rate)  ◄─ HDLC TX ◄─   ├─ do now / schedule
+                   ACKs, housekeeping, events, high-rate data   2 queues     ├─ "done" ACK
+                                                                             battery, wheel, sensors
+                                                                             safe mode, storage, dump
+</pre>
+<p><b>How the two programs stay in step:</b> every 100 ms of simulated time, the ground hands the satellite the uplink bits for that slice. The satellite runs ten 10 ms "ticks" (physics, scheduler, telemetry, transmitter) and hands back the downlink bits it produced. This is called <b>software-in-the-loop</b> testing: the real flight code runs, only the hardware around it is simulated. A 6.4-hour mission runs in about 2 seconds.</p>
+<h2>The message "envelopes"</h2>
+<table>
+<tr><th>Layer</th><th>Job</th><th>Where in the code</th></tr>
+<tr><td>HDLC / AX.25 frame</td><td>Marks where a message starts and ends on the radio (flag 0x7E), carries addresses, has its own CRC (FCS).</td><td><span class="mono">hdlc.c</span>, <span class="mono">link.py</span></td></tr>
+<tr><td>CCSDS space packet</td><td>Says which application it's for (APID), counts packets (sequence count), carries a time, has a second CRC.</td><td><span class="mono">ccsds.c</span>, <span class="mono">link.py</span></td></tr>
+<tr><td>Application data</td><td>Command ID + parameters, or telemetry values.</td><td><span class="mono">obc.c</span>, <span class="mono">station.py</span></td></tr>
+</table>
+<p>Full byte-by-byte formats are in <span class="mono">docs/ICD.md</span>.</p>
+
+<h1>3. The building blocks</h1>
+<h2>3.1 The ICD as code: one source of truth</h2>
+<p>Every number both sides must agree on (APIDs, command IDs, error codes, sizes) lives in one C header, <span class="mono">icd.h</span>. The Python ground station <b>reads that same file</b> when it starts. Change a number once and both sides change.</p>
+<div class="box key"><b class="t">Lesson from my internship</b>Most real integration bugs are "two sides disagree": the code says one APID, the spreadsheet another. Making the ICD executable removes that whole class of bug.</div>
+<h2>3.2 CRC-16: spotting damaged messages</h2>
+<p>A CRC is a 16-bit fingerprint calculated from the message. The receiver recalculates it; if it doesn't match, the message was damaged. I use CRC-16/CCITT-FALSE (polynomial 0x1021, start 0xFFFF). The standard test: the text "123456789" must give <span class="mono">0x29B1</span>. Both the C and Python versions pass it.</p>
+<h2>3.3 Big-endian, without buffer overflows</h2>
+<p>Numbers are sent "big end first" (4500 = <span class="mono">11 94</span>). Instead of raw pointer arithmetic, all reading and writing goes through a small <b>cursor</b> that knows the buffer size and sets an error flag instead of running past the end. A whole family of bugs (overruns, reading garbage) can't happen.</p>
+<h2>3.4 Bit stuffing: the trick that makes framing work</h2>
+<p>The frame marker 0x7E is <span class="mono">01111110</span>: six 1s in a row. If data ever had six 1s, the receiver would think the frame ended. So the sender adds a 0 after every five 1s, and the receiver removes it. My receiver works <b>one bit at a time</b> like real radio hardware: it counts 1s, drops stuffed 0s, spots flags, and treats seven 1s as "line idle, start again". The unit test feeds it the worst possible data (all 0x7E and 0xFF bytes) and checks it comes out perfect.</p>
+<h2>3.5 CCSDS packets and time</h2>
+<p>Each packet starts with a 6-byte header: type (command or telemetry), APID (the "department"), a 14-bit sequence count, and the length (stored as <i>length minus one</i>, a classic trap). Telemetry carries the satellite's clock in <b>CUC format</b> (seconds + fractions). Commands can carry a <b>time tag</b> saying when to run.</p>
+
+<h1>4. The flight software: the life of a command</h1>
+<p>Every command passes through seven gates before anything moves. Fail any gate and it stops there, with a reason sent back to the ground.</p>
+<table>
+<tr><th>#</th><th>Gate</th><th>If it fails</th></tr>
+<tr><td>1</td><td>Frame and packet CRC correct</td><td>Thrown away silently: a damaged message can't be trusted, not even its address. Ground notices the missing ACK and retries.</td></tr>
+<tr><td>2</td><td>APID is in the routing table</td><td>Reject: BAD_APID</td></tr>
+<tr><td>3</td><td>Not a repeat of the last sequence count</td><td>Reject: DUPLICATE (protects against replays and double execution)</td></tr>
+<tr><td>4</td><td>Known command, right parameter length</td><td>Reject: BAD_CMD / BAD_LENGTH</td></tr>
+<tr><td>5</td><td>Allowed in the current mode</td><td>Reject: MODE (e.g. no wheel commands in SAFE)</td></tr>
+<tr><td>6</td><td>Every parameter in range</td><td>Reject: BAD_PARAM (e.g. wheel 9000 rpm, SSTM rate 0 Hz)</td></tr>
+<tr><td>7</td><td>Time tag not in the past, schedule has room</td><td>Reject: TIME_PAST / SCHED_FULL</td></tr>
+</table>
+<p>Then the satellite sends the <b>acceptance ACK</b> and either runs the command now, or stores it in a 16-slot schedule. When it finishes it sends the <b>execution ACK</b> (or an execution failure, like a TLE whose checksum is wrong).</p>
+<div class="box analogy"><b class="t">Why two ACKs?</b>Like food delivery: "order received" isn't "order delivered". If you only get the first, you know exactly where things went wrong.</div>
+<h2>Features that make it behave like a real satellite</h2>
+<ul>
+<li><b>Time-tagged commands</b> run when their time arrives (using "now ≥ time", so a slow tick can never skip one), and the satellite <b>re-checks the mode at that moment</b>. Their execution ACKs are also written to on-board storage, because nobody is usually listening when they run.</li>
+<li><b>FDIR safe mode</b>: if battery voltage stays under the threshold for 3 seconds, the satellite switches off the payload, stops the wheel and enters SAFE. Leaving SAFE needs a command <i>and</i> a battery 300 mV above the threshold (hysteresis, so it doesn't flip back and forth).</li>
+<li><b>Housekeeping</b> every 10 s, sent live and also recorded in a 600-slot store. A <b>DUMP</b> command plays it back, paced by the transmitter so it never floods the queue.</li>
+<li><b>SSTM</b> (super-sampled telemetry): a short burst of 1–50 Hz recording, a small state machine (idle → logging → idle + "done" event). Overlapping sessions are refused.</li>
+<li><b>TLE upload</b> with the official checksum rule (sum the digits, minus signs count 1, mod 10) on both lines.</li>
+<li><b>Transmitter</b> limited to 9600 bit/s with two queues: ACKs and events jump ahead of bulk data.</li>
+<li><b>Simple physics</b>: orbit with 61% sunlight, solar panel, battery state of charge, loads that change with what's switched on, a reaction wheel that speeds up with realistic limits, a magnetometer that the magnetorquer disturbs, and temperature.</li>
+</ul>
+
+<h1>5. The ground station and the link</h1>
+<p>The ground station is a completely separate Python implementation of framing and packets. If two independently written programs understand each other perfectly, the format is unambiguous.</p>
+<ul>
+<li><b>Passes</b>: the link only works during five 10-minute windows across the day. Outside them, everything is lost (as in reality).</li>
+<li><b>Bit errors</b>: each bit on the air can be flipped with a chosen probability (BER), in both directions.</li>
+<li><b>Automatic retries</b>: no acceptance ACK within the timeout → send the <i>same</i> packet again, up to 4 times. If the reply is DUPLICATE, the ground knows the first copy did arrive and only its ACK was lost, so it marks the command as accepted. The duplicate check on board makes retries safe.</li>
+<li><b>Loss detection</b>: the ground counts missing telemetry from gaps in the sequence count, exactly what sequence counts are for.</li>
+</ul>
+
+<h1>6. Results</h1>
+<h2>6.1 A mission day</h2>
+<img src="../results/fig1_mission_overview.png">
+<p class="cap">Black line = what really happened inside the simulator. Orange = what the ground saw live. Blue = what the ground learned later from stored-telemetry dumps.</p>
+<p><b>The story:</b> in pass 1 the operator checks out the satellite, tests the wheel, uploads orbit data, switches the payload on and leaves four time-tagged commands. The payload draws more power than the panels give, so the battery falls each orbit. At 2.42 h (8,703 s), out of contact, the voltage crosses 6,600 mV for 3 s and the satellite <b>puts itself into SAFE mode</b> and sheds load. The time-tagged wheel command due at 9,000 s is <b>aborted</b> because of it. In passes 3 and 4 the operator asks for NOMINAL but the battery hasn't recovered enough, so the request is refused (hysteresis). In pass 5 it succeeds.</p>
+<div class="box key"><b class="t">Only 13% of the timeline was seen live</b>The other 87% of the satellite's history reached the ground through on-board storage and dumps, including the safe-mode event itself. This is why stored telemetry exists.</div>
+
+<h2>6.2 Every command, verified</h2>
+<img src="../results/fig3_tc_outcomes.png" style="width:88%">
+<p class="cap">35 commands: 21 accepted and executed, 9 refused at acceptance (each with the right reason: BAD_PARAM, BAD_CMD, BAD_APID, DUPLICATE, TIME_PAST, MODE), 5 accepted but failed on execution for good reasons (corrupted TLE, overlapping SSTM, aborted in SAFE, battery too low to leave SAFE).</p>
+
+<h2>6.3 Why high-rate telemetry exists</h2>
+<img src="../results/fig2_sstm_wheel_step.png">
+<p class="cap">The wheel is commanded to +3000 rpm, then −2000 rpm. Normal 10-second housekeeping (orange squares) catches almost nothing. The 20 Hz SSTM session (301 samples) shows the whole response: the speed ramps at its acceleration limit and settles smoothly.</p>
+
+<h2>6.4 A noisy radio</h2>
+<img src="../results/fig4_ber_sweep.png">
+<p class="cap">Each point: about 470 commands and 1,190 housekeeping packets over 20 simulated minutes.</p>
+<table>
+<tr><th>Bit error rate</th><th>Commands OK first try</th><th>Theory</th><th>After retries</th><th>Housekeeping received</th><th>Theory</th></tr>
+<tr><td>0</td><td>100%</td><td>100%</td><td>100%</td><td>100%</td><td>100%</td></tr>
+<tr><td>1 in 10,000</td><td>94.3%</td><td>94.0%</td><td>100%</td><td>94.6%</td><td>95.0%</td></tr>
+<tr><td>4 in 10,000</td><td>78.1%</td><td>78.1%</td><td>100%</td><td>81.8%</td><td>81.4%</td></tr>
+<tr><td>1 in 1,000</td><td>52.1%</td><td>53.8%</td><td>97.2%</td><td>60.0%</td><td>59.8%</td></tr>
+</table>
+<p>The theory is simple: a frame of N bits survives if every bit survives, so the chance is (1 − BER)<sup>N</sup>. A housekeeping frame is 514 bits on air; a command plus its ACK is 619. The measurements match the theory closely, which shows the framing, CRC and decoding behave exactly as designed. Retries turn a 52% link into a 97% one.</p>
+
+<h2>6.5 How strong is CRC-16?</h2>
+<table>
+<tr><th>Damage to a 44-byte packet</th><th>Trials</th><th>Not detected</th></tr>
+<tr><td>1 bit flipped</td><td>50,000</td><td>0</td></tr>
+<tr><td>2 bits flipped</td><td>50,000</td><td>0</td></tr>
+<tr><td>3 bits flipped</td><td>50,000</td><td>0</td></tr>
+<tr><td>A burst of up to 16 bits</td><td>50,000</td><td>0</td></tr>
+<tr><td>Heavy damage (8–20 random bits)</td><td>200,000</td><td>4</td></tr>
+</table>
+<p>CRC-16 is guaranteed to catch small errors and bursts up to 16 bits. With heavy random damage, about 1 in 65,536 slips through by chance (here 4 in 200,000 ≈ 1 in 50,000, as expected). That's why this design has <b>two</b> CRCs (frame and packet): a damaged message would have to fool both.</p>
+
+<h1>7. Testing and code quality</h1>
+<table>
+<tr><th>Test</th><th>What it proves</th><th>Result</th></tr>
+<tr><td>C unit tests (27)</td><td>CRC check value and bit-flip detection; big-endian round trips and overflow protection; bit stuffing with worst-case data; three back-to-back frames; corrupted frame dropped while the others survive; packet build/parse, time tags, 14-bit sequence limit, CRC and length errors; TLE checksums.</td><td>27 / 27</td></tr>
+<tr><td>Python cross-tests (7)</td><td>Python and C produce the same bytes; constants come from icd.h; end-to-end NO_OP and wheel command through the real C flight software.</td><td>7 / 7</td></tr>
+<tr><td>Mission simulation</td><td>Behaviour of the whole system over 6.4 h, compared with the simulator's hidden "truth".</td><td>All outcomes as designed</td></tr>
+</table>
+<h2>Bugs found while building (and what they taught me)</h2>
+<ul>
+<li><b><span class="mono">memcpy(dst, NULL, 0)</span></b> crashed the tests: copying zero bytes from a NULL pointer is <i>undefined behaviour</i> in C. Fixed by returning early for zero length.</li>
+<li><b>Time round-trip off by 1 ms</b>: converting milliseconds to 1/65536 s and back truncated. Fixed by rounding.</li>
+<li><b>A big dump would overflow the transmit queue</b>: fixed by having the transmitter pull stored packets only when it has room (flow control).</li>
+<li><b>Time-tagged results were lost out of contact</b>: execution ACKs and events are now also kept in on-board storage.</li>
+<li>The compiler targeted the wrong CPU at first ("illegal instruction"): always check what architecture you're building for.</li>
+</ul>
+
+<h1>8. What I would add next</h1>
+<ol>
+<li><b>Run it on real hardware</b>: port <span class="mono">obc.c</span> to a RISC-V or ARM board with FreeRTOS (tasks for receive, scheduler, telemetry), using a UART instead of a pipe.</li>
+<li><b>CCSDS COP-1 / FARM-1</b>: the standard frame-level retransmission protocol, instead of my packet-level retries.</li>
+<li><b>Forward error correction</b> (Reed–Solomon or convolutional coding) so most bit errors are <i>fixed</i>, not just detected.</li>
+<li><b>Command authentication</b> (a message authentication code) so nobody else can command the satellite; the duplicate check alone is not security.</li>
+<li><b>ECSS PUS services</b>: map my ACKs to PUS service 1 and housekeeping to service 3.</li>
+<li><b>A real orbit propagator</b> (SGP4) using the uploaded TLE, to predict passes and eclipses instead of using a fixed pattern.</li>
+</ol>
+
+<h1>9. How to talk about this project</h1>
+<div class="box simple"><b class="t">30-second version</b>"I built a complete CubeSat command and telemetry system from scratch: C flight software with HDLC bit-stuffed framing, CCSDS packets, a seven-gate command validation pipeline, two-stage acknowledgements, a time-tagged scheduler, battery-driven safe mode and stored telemetry; plus an independent Python ground station and a noisy-link simulator. I ran a 6.4-hour simulated mission and a bit-error sweep: measured frame survival matched (1−BER)^N theory, and automatic retries kept command delivery at 97% at a bit error rate of one in a thousand. 34 automated tests, all passing."</div>
+<h2>Questions you can now answer from experience</h2>
+<ul>
+<li>Why does a damaged command get no ACK at all? (Gate 1: you can't trust any field of it.)</li>
+<li>How do you make retries safe? (Same sequence count + duplicate check on board.)</li>
+<li>Why re-check the mode when a time-tagged command runs? (Section 6.1: it was aborted for exactly that reason.)</li>
+<li>Why is stored telemetry essential? (87% of the mission was only seen through dumps.)</li>
+<li>What does CRC-16 guarantee, and what doesn't it? (Section 6.5.)</li>
+<li>How did you keep the ground and the satellite consistent? (icd.h is read by both.)</li>
+</ul>
+</body></html>

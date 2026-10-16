@@ -1,0 +1,186 @@
+{
+  "mission": {
+    "mission_duration_h": 6.36,
+    "passes": 5,
+    "telecommands_sent": 35,
+    "accepted": 26,
+    "rejected_at_acceptance": 9,
+    "executed_ok": 21,
+    "execution_failed": 5,
+    "rejection_reasons": [
+      "BAD_APID",
+      "BAD_CMD",
+      "BAD_PARAM",
+      "DUPLICATE",
+      "MODE",
+      "TIME_PAST"
+    ],
+    "hk_packets_live": 300,
+    "hk_packets_from_dumps": 2234,
+    "hk_live_coverage_pct": 13.1,
+    "sstm_samples": 301,
+    "events": [
+      {
+        "t_s": 35.1,
+        "event": "SSTM_DONE",
+        "value": 301
+      },
+      {
+        "t_s": 60.1,
+        "event": "TLE_UPDATED",
+        "value": 8264
+      },
+      {
+        "t_s": 8702.99,
+        "event": "SAFE_ENTER",
+        "value": 6550
+      },
+      {
+        "t_s": 22370.1,
+        "event": "SAFE_EXIT",
+        "value": 6936
+      }
+    ],
+    "min_battery_mv": 6494.0,
+    "obc_counters": {
+      "frames_ok": 35,
+      "frame_fcs_errors": 0,
+      "frame_aborts": 0,
+      "frame_runts": 0,
+      "pkt_crc_errors": 0,
+      "pkt_other_errors": 0,
+      "tc_received": 35,
+      "accepted": 26,
+      "executed": 21,
+      "rejected": 14,
+      "frames_sent": 4620,
+      "txq_dropped": 0,
+      "store_overwritten": 0
+    }
+  },
+  "ber": {
+    "rows": [
+      {
+        "ber": 0,
+        "tc_sent": 470,
+        "tc_transmissions": 470,
+        "tc_ok_first_try_pct": 100.0,
+        "tc_ok_after_retries_pct": 100.0,
+        "uplink_frames_ok": 471,
+        "uplink_frames_bad": 0,
+        "hk_received_pct": 100.0,
+        "down_fcs_errors": 0,
+        "bits_flipped": 0
+      },
+      {
+        "ber": 1e-05,
+        "tc_sent": 470,
+        "tc_transmissions": 472,
+        "tc_ok_first_try_pct": 99.57446808510639,
+        "tc_ok_after_retries_pct": 100.0,
+        "uplink_frames_ok": 472,
+        "uplink_frames_bad": 1,
+        "hk_received_pct": 99.74811083123426,
+        "down_fcs_errors": 8,
+        "bits_flipped": 9
+      },
+      {
+        "ber": 3e-05,
+        "tc_sent": 470,
+        "tc_transmissions": 478,
+        "tc_ok_first_try_pct": 98.29787234042553,
+        "tc_ok_after_retries_pct": 100.0,
+        "uplink_frames_ok": 476,
+        "uplink_frames_bad": 3,
+        "hk_received_pct": 98.5726280436608,
+        "down_fcs_errors": 25,
+        "bits_flipped": 32
+      },
+      {
+        "ber": 0.0001,
+        "tc_sent": 470,
+        "tc_transmissions": 498,
+        "tc_ok_first_try_pct": 94.25531914893617,
+        "tc_ok_after_retries_pct": 100.0,
+        "uplink_frames_ok": 493,
+        "uplink_frames_bad": 6,
+        "hk_received_pct": 94.62636439966414,
+        "down_fcs_errors": 96,
+        "bits_flipped": 111
+      },
+      {
+        "ber": 0.0002,
+        "tc_sent": 470,
+        "tc_transmissions": 530,
+        "tc_ok_first_try_pct": 88.72340425531915,
+        "tc_ok_after_retries_pct": 100.0,
+        "uplink_frames_ok": 505,
+        "uplink_frames_bad": 26,
+        "hk_received_pct": 89.49579831932773,
+        "down_fcs_errors": 178,
+        "bits_flipped": 235
+      },
+      {
+        "ber": 0.0004,
+        "tc_sent": 470,
+        "tc_transmissions": 590,
+        "tc_ok_first_try_pct": 78.08510638297872,
+        "tc_ok_after_retries_pct": 100.0,
+        "uplink_frames_ok": 543,
+        "uplink_frames_bad": 48,
+        "hk_received_pct": 81.76470588235294,
+        "down_fcs_errors": 326,
+        "bits_flipped": 460
+      },
+      {
+        "ber": 0.0007,
+        "tc_sent": 470,
+        "tc_transmissions": 739,
+        "tc_ok_first_try_pct": 62.12765957446808,
+        "tc_ok_after_retries_pct": 99.36170212765957,
+        "uplink_frames_ok": 617,
+        "uplink_frames_bad": 126,
+        "hk_received_pct": 69.10159529806886,
+        "down_fcs_errors": 592,
+        "bits_flipped": 919
+      },
+      {
+        "ber": 0.001,
+        "tc_sent": 470,
+        "tc_transmissions": 862,
+        "tc_ok_first_try_pct": 52.12765957446808,
+        "tc_ok_after_retries_pct": 97.23404255319149,
+        "uplink_frames_ok": 679,
+        "uplink_frames_bad": 185,
+        "hk_received_pct": 60.0335852225021,
+        "down_fcs_errors": 796,
+        "bits_flipped": 1332
+      }
+    ],
+    "tc_frame_bits": 242,
+    "ack_frame_bits": 377,
+    "hk_frame_bits": 514
+  },
+  "crc": {
+    "1 bit flipped": {
+      "trials": 50000,
+      "undetected": 0
+    },
+    "2 bits flipped": {
+      "trials": 50000,
+      "undetected": 0
+    },
+    "3 bits flipped": {
+      "trials": 50000,
+      "undetected": 0
+    },
+    "burst of 16 bits": {
+      "trials": 50000,
+      "undetected": 0
+    },
+    "heavy damage (8-20 random bits)": {
+      "trials": 200000,
+      "undetected": 4
+    }
+  }
+}
